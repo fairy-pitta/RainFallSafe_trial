@@ -1,0 +1,96 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+
+#mapid {
+    height: 100vh; /* 100% of the viewport height */
+    width: 100%; /* 100% of the viewport width */
+}
+
+
+.current-location-icon {
+    width: 18px;
+    height: 18px;
+    background: radial-gradient(circle at center, #4285F4 50%, transparent 70%);
+    border: 2px solid #4285F4; /* Solid blue border */
+    border-radius: 50%;
+    box-shadow: 0 0 8px #4285F4; /* Blue glow effect */
+}
+
+
+.rain-marker .fa {
+    text-align: center;
+}
+
+.rain-marker {
+    font-size: 24px; /* アイコンのサイズを大きくする */
+    text-shadow: 0 0 8px rgba(0,0,255,0.5); /* アイコンに影をつけて目立たせる */
+}
+
+.no-rain-marker {
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    border: 2px solid #4285F4; /* Light blue border */
+    border-radius: 50%;
+    background-color: white;
+    color: #4285F4; /* Light blue text color */
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.rain-marker-light {
+    animation: pulseBlue 2s infinite;
+}
+
+@keyframes pulseBlue {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); color: #007BFF; } /* 色をもっと濃くする */
+    100% { transform: scale(1); }
+}
+
+
+#locate-btn {
+    position: fixed;
+    bottom: 90px; /* レジェンドの上に配置 */
+    right: 20px;
+    z-index: 1000; /* 地図の上に表示する */
+    padding: 10px 20px;
+    background: white;
+    border: 2px solid #4285F4;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#legend {
+    position: fixed;
+    bottom: 20px; /* 画面の左下に設定 */
+    left: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 5px;
+    width: 150px;
+    z-index: 1010; /* ボタンよりも前面に表示 */
+}
+
+#update-btn {
+    background-color: #4CAF50; /* Green background color */
+    color: white; /* White text */
+    border: none; /* No borders */
+    padding: 10px 20px; /* Padding inside the button */
+    border-radius: 5px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    font-size: 16px; /* Larger text */
+    position: fixed; /* Fixed position */
+    bottom: 20px; /* Positioned at the bottom of the viewport */
+    right: 20px; /* Positioned on the right side of the viewport */
+    z-index: 1001; /* Ensure it's above other elements */
+}
+
+#update-btn:hover {
+    background-color: #45a049; /* Darker green when hovered */
+}

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rain Map</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+</head>
+<body>
+    <div id="mapid"></div>
+    <button id="locate-btn">📍 Locate Me</button>
+
+    <div id="legend">
+        <p><i class="fas fa-sun" style="color: red;"></i> - Not Raining</p>
+        <p><i class="fas fa-cloud-rain" style="color: #007BFF;"></i> - Drizzling</p>
+        <p><i class="fas fa-cloud-showers-heavy" style="color: #0056b3;"></i> - Raining</p>
+        <p><i class="fas fa-poo-storm" style="color: #00008b;"></i> - Heavy Rain</p>
+    </div>
+
+    <button id="update-btn">Reload</button>
+
+    
+
+    <script>
+        var mymap = L.map('mapid').setView([1.3521, 103.8198], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(mymap);
+        
+        document.getElementById('update-btn').addEventListener('click', function() {
+            fetch('/api/rainfall-data/')
+                .then(response => response.json())
+                .then(data => {
+                    var stations = data.metadata.stations;
+                    var readings = data.items[0].readings;
+                    var timestamp = data.items[0].timestamp;
+                    updateMap(stations, readings, timestamp);
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        });
+        
+        function updateMap(stations, readings, timestamp) {
+            mymap.eachLayer(function(layer) {
+                if (!layer._url) mymap.removeLayer(layer); // Removes all layers except the tile layer
+            });
+        
+            readings.forEach(function(reading) {
+                var station = stations.find(s => s.id === reading.station_id);
+                if (station) {
+                    var icon = createIcon(reading.value);
+                    L.marker([station.location.latitude, station.location.longitude], {icon: icon})
+                        .bindPopup('Station: ' + station.name + '<br> Rainfall: ' + reading.value + ' mm<br> Timestamp: ' + formatDate(new Date(timestamp)))
+                        .addTo(mymap);
+                }
+            });
+        }
+        
+        function createIcon(rainfall) {
+            var color = getColor(rainfall);
+            var iconHtml = '<i class="fas ' + getWeatherIcon(rainfall) + '" style="color:' + color + ';"></i>';
+            return L.divIcon({html: iconHtml, className: 'custom-icon', iconSize: [50, 50], iconAnchor: [25, 50]});
+        }
+        
+        function getColor(rainfall) {
+            if (rainfall == 0) return 'red';
+            if (rainfall < 1) return '#007BFF';
+            if (rainfall < 5) return '#0056b3';
+            return '#00008b';
+        }
+        
+        function getWeatherIcon(rainfall) {
+            if (rainfall == 0) return 'fa-sun';
+            if (rainfall < 1) return 'fa-cloud-rain';
+            if (rainfall < 5) return 'fa-cloud-showers-heavy';
+            return 'fa-poo-storm';
+        }
+        
+        function formatDate(date) {
+            return date.getHours() + ':' + ('0' + date.getMinutes()).slice(-2);
+        }
+        </script>
+    
+    
+    
+    
+</body>
+</html>
