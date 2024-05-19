@@ -30,59 +30,75 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19
         }).addTo(mymap);
-        
+    
+        var stations = {{ stations|safe }};
+        var readings = {{ readings|safe }};
+        var timestamp = '{{ timestamp }}'; // Djangoテンプレートを使用してタイムスタンプを渡す
+    
+        function formatDate(timestamp) {
+            var date = new Date(timestamp);
+            return date.getHours() + ':' + ('0' + date.getMinutes()).slice(-2); // HH:MM 形式
+        }
+    
+        function getColor(rainfall) {
+            if (rainfall == 0) return {color: 'red', icon: 'fa-sun'}; // 晴れマークを赤色に
+            if (rainfall < 1) return {color: '#007BFF', icon: 'fa-cloud-rain'}; // もっと濃い水色
+            if (rainfall < 5) return {color: '#0056b3', icon: 'fa-cloud-showers-heavy'}; // より濃い青
+            return {color: '#00008b', icon: 'fa-poo-storm'}; // 最も濃い青
+        }
+    
+        readings.forEach(function(reading) {
+            var station = stations.find(station => station.id === reading.station_id);
+            var weather = getColor(reading.value);
+            var iconHtml = '<i class="fas ' + weather.icon + '" style="color:' + weather.color + ';"></i>';
+            var customIcon = L.divIcon({
+                className: 'rain-marker',
+                html: iconHtml,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+            L.marker([station.location.latitude, station.location.longitude], {icon: customIcon}).addTo(mymap)
+                .bindPopup('Station: ' + station.name + '<br> Rainfall: ' + reading.value + ' mm<br> Timestamp: ' + formatDate(timestamp));
+        });
+    
+        var userLocationMarker;
+        document.getElementById('locate-btn').onclick = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+                    if (userLocationMarker) {
+                        mymap.removeLayer(userLocationMarker);
+                    }
+                    userLocationMarker = L.marker([lat, lon], {icon: L.divIcon({
+                        className: 'current-location-icon',
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
+                    })}).addTo(mymap);
+                    mymap.flyTo([lat, lon], 13, {duration: 1.0}); // マップをスムーズに移動
+                }, function(error) {
+                    alert("Error occurred. Error code: " + error.code);
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        };
+
         document.getElementById('update-btn').addEventListener('click', function() {
-            fetch('/api/rainfall-data/')
+            fetch('https://api.data.gov.sg/v1/environment/rainfall')
                 .then(response => response.json())
                 .then(data => {
-                    var stations = data.metadata.stations;
-                    var readings = data.items[0].readings;
-                    var timestamp = data.items[0].timestamp;
-                    updateMap(stations, readings, timestamp);
+                    // データを使ってマップを更新するロジック
+                    console.log('Map data updated:', data);
                 })
                 .catch(error => console.error('Error fetching data:', error));
         });
-        
-        function updateMap(stations, readings, timestamp) {
-            mymap.eachLayer(function(layer) {
-                if (!layer._url) mymap.removeLayer(layer); // Removes all layers except the tile layer
-            });
-        
-            readings.forEach(function(reading) {
-                var station = stations.find(s => s.id === reading.station_id);
-                if (station) {
-                    var icon = createIcon(reading.value);
-                    L.marker([station.location.latitude, station.location.longitude], {icon: icon})
-                        .bindPopup('Station: ' + station.name + '<br> Rainfall: ' + reading.value + ' mm<br> Timestamp: ' + formatDate(new Date(timestamp)))
-                        .addTo(mymap);
-                }
-            });
-        }
-        
-        function createIcon(rainfall) {
-            var color = getColor(rainfall);
-            var iconHtml = '<i class="fas ' + getWeatherIcon(rainfall) + '" style="color:' + color + ';"></i>';
-            return L.divIcon({html: iconHtml, className: 'custom-icon', iconSize: [50, 50], iconAnchor: [25, 50]});
-        }
-        
-        function getColor(rainfall) {
-            if (rainfall == 0) return 'red';
-            if (rainfall < 1) return '#007BFF';
-            if (rainfall < 5) return '#0056b3';
-            return '#00008b';
-        }
-        
-        function getWeatherIcon(rainfall) {
-            if (rainfall == 0) return 'fa-sun';
-            if (rainfall < 1) return 'fa-cloud-rain';
-            if (rainfall < 5) return 'fa-cloud-showers-heavy';
-            return 'fa-poo-storm';
-        }
-        
-        function formatDate(date) {
-            return date.getHours() + ':' + ('0' + date.getMinutes()).slice(-2);
-        }
-        </script>
+
+    
+        window.onload = function() {
+            document.getElementById('locate-btn').click();
+        };
+    </script>
     
     
     
